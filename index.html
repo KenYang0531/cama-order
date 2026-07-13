@@ -20,6 +20,7 @@
   body{
     font-family:"Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
     background:var(--bg);color:var(--ink);line-height:1.5;
+    overflow-x:hidden;
     padding-bottom:env(safe-area-inset-bottom);
   }
   button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
@@ -74,11 +75,13 @@
   .pill-closed{background:#fdeeda;color:var(--amber-dk)}
   .pill-archived{background:#efeae3;color:var(--muted)}
   .create-box{display:flex;gap:8px;margin-top:12px}
-  .create-box input{flex:1;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff}
+  .create-box input{flex:1;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff}
+  .create-box .btn{flex:none}
 
   /* Identity */
   .idbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-  .idbar input{flex:1;min-width:140px;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:#fff}
+  .idbar input{flex:1;min-width:0;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:#fff}
+  .idbar .btn{flex:none}
   .avatar{width:34px;height:34px;border-radius:50%;background:var(--amber);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;flex:none;overflow:hidden}
   .avatar img{width:100%;height:100%;object-fit:cover}
 
@@ -114,7 +117,11 @@
   /* Sheet / modal */
   .overlay{position:fixed;inset:0;background:rgba(46,32,25,.45);z-index:50;display:none;align-items:flex-end;justify-content:center}
   .overlay.show{display:flex}
-  .sheet{background:var(--bg);width:100%;max-width:760px;border-radius:22px 22px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto;animation:slideup .22s ease}
+  .sheet{background:var(--bg);width:100%;max-width:760px;border-radius:22px 22px 0 0;max-height:90vh;display:flex;flex-direction:column;animation:slideup .22s ease}
+  .sheet-head{display:flex;justify-content:flex-end;padding:12px 12px 0;flex:none}
+  .sheet-close{width:36px;height:36px;border-radius:50%;background:#efe4d3;color:#6b5946;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .sheet-close:active{background:#e6d8c2}
+  .sheet-body{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:0 16px calc(20px + env(safe-area-inset-bottom))}
   @keyframes slideup{from{transform:translateY(30px);opacity:.6}to{transform:translateY(0);opacity:1}}
   @media(min-width:760px){.overlay{align-items:center}.sheet{border-radius:22px;margin:0 16px}}
   .sheet h2{font-size:18px}
@@ -177,7 +184,10 @@
 
 <div class="wrap" id="app"></div>
 
-<div class="overlay" id="overlay"><div class="sheet" id="sheet"></div></div>
+<div class="overlay" id="overlay"><div class="sheet" id="sheet">
+  <div class="sheet-head"><button class="sheet-close" onclick="closeSheet()" aria-label="關閉">✕</button></div>
+  <div class="sheet-body" id="sheetBody"></div>
+</div></div>
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -245,8 +255,10 @@ const MENU = [
   {id:"choco-milk",cat:"others",zh:"可可歐蕾",en:"Chocolate Milk",p:[95,110,125]},
 ];
 const SIZES = [{k:"M",label:"M",sub:"12oz"},{k:"L",label:"L",sub:"16oz"},{k:"XL",label:"XL",sub:"22oz"}];
-const SUGARS = [{k:"full",label:"全糖"},{k:"half",label:"半糖"},{k:"light",label:"微糖"},{k:"none",label:"無糖"}];
-const SUGAR_LABEL = {full:"全糖",half:"半糖",light:"微糖",none:"無糖"};
+const SUGARS = [{k:"none",label:"無糖"},{k:"light",label:"微糖"},{k:"half",label:"半糖"},{k:"less",label:"少糖"},{k:"full",label:"正常糖"}];
+const SUGAR_LABEL = {none:"無糖",light:"微糖",half:"半糖",less:"少糖",full:"正常糖"};
+const ICES = [{k:"normal",label:"正常冰"},{k:"less",label:"少冰"},{k:"light",label:"微冰"},{k:"none",label:"去冰"}];
+const ICE_LABEL = {normal:"正常冰",less:"少冰",light:"微冰",none:"去冰"};
 const menuById = Object.fromEntries(MENU.map(m=>[m.id,m]));
 const PHOTO_IDS = new Set(["cold-brew","berry","floral-yirga","yirga","mandheling-brazil","mandheling","premium-americano","premium-latte","oat-latte","flavored-coffee","flavored-latte","caramel-macchiato","black-tea","freshmilk-black-tea","flavored-milk-tea","alishan-oolong","freshmilk-oolong","mixed-berries","herbal","mango-rooibos","rich-milk-latte","pomona","mocha","matcha-milk","matcha-latte","light-americano","light-latte","choco-prince","camellia-latte","milkfoam-oolong","milkfoam-black-tea","milkfoam-sea-salt","greenjade","coffeejelly-freshmilk-tea","coffee-jelly-latte","choco-milk","cappuccino","cama-americano","cama-latte"]);
 
@@ -439,7 +451,7 @@ let draft=null;
 function openItem(id){
   const m=menuById[id];
   const firstSize = SIZES.find((s,i)=>m.p[i]!=null)?.k || "M";
-  draft={id, size:firstSize, temp:null, sugar:"half", note:"", variant:(m.variants?m.variants[0]:null)};
+  draft={id, size:firstSize, temp:null, sugar:"full", ice:"normal", note:"", variant:(m.variants?m.variants[0]:null)};
   fixTemp();
   renderItemSheet();
   openSheetRaw();
@@ -468,23 +480,27 @@ function renderItemSheet(){
       <button class="opt ${draft.temp==='ice'?'on':''}" ${(m.hot)?'disabled':''} onclick="pickTemp('ice')">冰</button>
       <button class="opt ${draft.temp==='hot'?'on':''}" ${(m.ice||draft.size==='XL')?'disabled':''} onclick="pickTemp('hot')">熱</button>
     </div></div>
+    ${draft.temp==='ice'?`<div class="opt-group"><div class="opt-label">冰塊</div><div class="opts">
+      ${ICES.map(s=>`<button class="opt ${draft.ice===s.k?'on':''}" onclick="pickIce('${s.k}')">${s.label}</button>`).join("")}
+    </div></div>`:""}
     <div class="opt-group"><div class="opt-label">糖度</div><div class="opts">
       ${SUGARS.map(s=>`<button class="opt ${draft.sugar===s.k?'on':''}" onclick="pickSugar('${s.k}')">${s.label}</button>`).join("")}
     </div></div>
     <div class="opt-group"><div class="opt-label">備註（選填）</div>
       <input class="note-in" id="noteIn" placeholder="例如：少冰、常溫、加濃縮…" value="${esc(draft.note)}" maxlength="30"></div>
     <button class="btn btn-primary btn-block" style="margin-top:20px" onclick="addToCart()">加入 ${draft.size}${SHOW_PRICE&&price?` · $${price}`:""}</button>`;
-  document.getElementById("sheet").innerHTML=html;
+  document.getElementById("sheetBody").innerHTML=html;
 }
 function pickSize(k){draft.size=k;fixTemp();syncNote();renderItemSheet();}
 function pickVariant(v){draft.variant=v;syncNote();renderItemSheet();}
 function pickTemp(t){draft.temp=t;syncNote();renderItemSheet();}
 function pickSugar(s){draft.sugar=s;syncNote();renderItemSheet();}
+function pickIce(v){draft.ice=v;syncNote();renderItemSheet();}
 function syncNote(){const n=document.getElementById("noteIn");if(n)draft.note=n.value;}
 function addToCart(){
   syncNote();
   const m=menuById[draft.id]; const idx={M:0,L:1,XL:2}[draft.size];
-  state.cart.push({item_id:m.id,item_name:m.zh,category:m.cat,variant:draft.variant||null,size:draft.size,temp:draft.temp,sugar:draft.sugar,price:m.p[idx]||null,note:draft.note.trim()});
+  state.cart.push({item_id:m.id,item_name:m.zh,category:m.cat,variant:draft.variant||null,size:draft.size,temp:draft.temp,ice_level:(draft.temp==="ice"?draft.ice:null),sugar:draft.sugar,price:m.p[idx]||null,note:draft.note.trim()});
   closeSheet();
   document.getElementById("cartCard").innerHTML=cartHtml();
   toast("已加入 "+m.zh);
@@ -495,7 +511,7 @@ function cartHtml(){
   if(!state.cart.length) return `<h2>我的訂單</h2><div class="empty">點上面的品項加入這裡，填名字後送出。</div>`;
   return `<h2>我的訂單（${state.cart.length} 杯）</h2>`+state.cart.map((o,i)=>`<div class="line-item">
       <div class="li-main"><div class="li-name">${esc(dispName(o))}</div>
-        <div class="li-spec"><span class="chip chip-${o.temp}">${o.temp==="ice"?"冰":"熱"}</span>${o.size} · ${SUGAR_LABEL[o.sugar]}${o.note?` · ${esc(o.note)}`:""}</div></div>
+        <div class="li-spec"><span class="chip chip-${o.temp}">${o.temp==="ice"?"冰":"熱"}</span>${o.size} · ${o.temp==="ice"&&o.ice_level?ICE_LABEL[o.ice_level]+" · ":""}${SUGAR_LABEL[o.sugar]}${o.note?` · ${esc(o.note)}`:""}</div></div>
       <button class="icon-btn" onclick="removeCart(${i})">✕</button>
     </div>`).join("")+`<button class="btn btn-primary btn-block" style="margin-top:14px" onclick="submitOrder()">送出訂單（${state.cart.length} 杯）</button>`;
 }
@@ -524,7 +540,7 @@ async function loadLast(){
     const {data}=await sb.from("orders").select("*").eq("user_email",state.user.email).neq("group_id",state.group.id).order("created_at",{ascending:false}).limit(30);
     if(data&&data.length){
       const lastGid=data[0].group_id;
-      const items=data.filter(o=>o.group_id===lastGid).map(o=>({item_id:o.item_id,item_name:o.item_name,category:o.category,variant:o.variant||null,size:o.size,temp:o.temp,sugar:o.sugar,price:o.price,note:o.note||""}));
+      const items=data.filter(o=>o.group_id===lastGid).map(o=>({item_id:o.item_id,item_name:o.item_name,category:o.category,variant:o.variant||null,size:o.size,temp:o.temp,ice_level:o.ice_level||null,sugar:o.sugar,price:o.price,note:o.note||""}));
       state.cart=state.cart.concat(items);
       document.getElementById("cartCard").innerHTML=cartHtml();
       toast(`帶入上次 ${items.length} 杯`); return;
@@ -548,7 +564,7 @@ function boardHtml(){
   return Object.entries(byPerson).map(([name,list])=>`<div class="section" style="margin-top:6px">
     <div class="li-name">${esc(name)} <span class="hint">· ${list.length} 杯</span></div>
     ${list.map(o=>`<div class="line-item">
-      <div class="li-main"><div class="li-spec"><span class="chip chip-${o.temp}">${o.temp==="ice"?"冰":"熱"}</span>${esc(dispName(o))} · ${o.size} · ${SUGAR_LABEL[o.sugar]}${o.note?` · ${esc(o.note)}`:""}</div></div>
+      <div class="li-main"><div class="li-spec"><span class="chip chip-${o.temp}">${o.temp==="ice"?"冰":"熱"}</span>${esc(dispName(o))} · ${o.size} · ${o.temp==="ice"&&o.ice_level?ICE_LABEL[o.ice_level]+" · ":""}${SUGAR_LABEL[o.sugar]}${o.note?` · ${esc(o.note)}`:""}</div></div>
       ${mine.includes(o.id)?`<button class="icon-btn" title="移除我的這杯" onclick="delOrder('${o.id}')">🗑</button>`:""}
     </div>`).join("")}
   </div>`).join("");
@@ -580,17 +596,18 @@ function buildExport(){
   // 訂單清單（整併）
   const map=new Map();
   orders.forEach(o=>{
-    const key=`${o.category}|${o.item_name}|${o.variant||""}|${o.size}|${o.temp}|${o.sugar}|${o.note||""}`;
+    const key=`${o.category}|${o.item_name}|${o.variant||""}|${o.size}|${o.temp}|${o.ice_level||""}|${o.sugar}|${o.note||""}`;
     if(!map.has(key))map.set(key,{...o,qty:0});
     map.get(key).qty++;
   });
   const order=CATS.map(c=>c.id);
   const listArr=[...map.values()].sort((a,b)=>order.indexOf(a.category)-order.indexOf(b.category)||a.item_name.localeCompare(b.item_name,"zh"));
-  const list=listArr.map((o,i)=>`${i+1}. ${dispName(o)}　${o.size}/${o.temp==="ice"?"冰":"熱"}/${SUGAR_LABEL[o.sugar]}${o.note?`（${o.note}）`:""}　×${o.qty}`).join("\n");
+  const spec=o=>`${o.size}/${o.temp==="ice"?"冰":"熱"}${o.temp==="ice"&&o.ice_level?"/"+ICE_LABEL[o.ice_level]:""}/${SUGAR_LABEL[o.sugar]}`;
+  const list=listArr.map((o,i)=>`${i+1}. ${dispName(o)}　${spec(o)}${o.note?`（${o.note}）`:""}　×${o.qty}`).join("\n");
   // 對應名單
   const byPerson={};
   orders.forEach(o=>{(byPerson[o.user_name]=byPerson[o.user_name]||[]).push(o);});
-  const names=Object.entries(byPerson).map(([n,l])=>`・${n}：`+l.map(o=>`${dispName(o)} ${o.size}/${o.temp==="ice"?"冰":"熱"}/${SUGAR_LABEL[o.sugar]}${o.note?`(${o.note})`:""}`).join("、")).join("\n");
+  const names=Object.entries(byPerson).map(([n,l])=>`・${n}：`+l.map(o=>`${dispName(o)} ${spec(o)}${o.note?`(${o.note})`:""}`).join("、")).join("\n");
   const listText=`${head}\n────────────\n▍訂單清單（拿去點的）\n${list||"（無）"}`;
   const nameText=`${head}\n────────────\n▍對應名單（回來發的）\n${names||"（無）"}`;
   return {listText,nameText};
@@ -603,7 +620,7 @@ function openExport(){
 function renderExport(){
   const {listText,nameText}=buildExport();
   const cur = state.exportTab==="list"?listText:nameText;
-  document.getElementById("sheet").innerHTML=`<h2>匯出訊息</h2>
+  document.getElementById("sheetBody").innerHTML=`<h2>匯出訊息</h2>
     <div class="seg" style="margin-top:12px">
       <button class="${state.exportTab==='list'?'on':''}" onclick="switchExport('list')">訂單清單</button>
       <button class="${state.exportTab==='names'?'on':''}" onclick="switchExport('names')">對應名單</button>
@@ -624,9 +641,9 @@ function copy(text,msg){
 function fallbackCopy(text,msg){const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast(msg||"已複製");}catch(e){toast("複製失敗，請長按選取");}document.body.removeChild(ta);}
 
 /* ---- Sheet 控制 ---- */
-function openSheet(html){document.getElementById("sheet").innerHTML=html;openSheetRaw();}
-function openSheetRaw(){document.getElementById("overlay").classList.add("show");}
-function closeSheet(){document.getElementById("overlay").classList.remove("show");}
+function openSheet(html){document.getElementById("sheetBody").innerHTML=html;openSheetRaw();}
+function openSheetRaw(){document.getElementById("sheetBody").scrollTop=0;document.getElementById("overlay").classList.add("show");document.body.style.overflow="hidden";}
+function closeSheet(){document.getElementById("overlay").classList.remove("show");document.body.style.overflow="";}
 document.getElementById("overlay").addEventListener("click",e=>{if(e.target.id==="overlay")closeSheet();});
 </script>
 </body>
