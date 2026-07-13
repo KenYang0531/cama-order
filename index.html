@@ -392,7 +392,7 @@ function renderGroup(){
 
     ${closed?`<div class="banner section">此團已${g.status==="closed"?"結單":"封存"}，僅供檢視與匯出。</div>`:`
     <div class="section">
-      <div class="cats" id="cats">${CATS.map(c=>`<button class="cat ${c.id===state.cat?'active':''}" onclick="setCat('${c.id}')">${c.name} <span class="cat-en">${c.en}</span></button>`).join("")}</div>
+      <div class="cats" id="cats">${CATS.map(c=>`<button class="cat ${c.id===state.cat?'active':''}" data-cat="${c.id}" onclick="setCat('${c.id}')">${c.name} <span class="cat-en">${c.en}</span></button>`).join("")}</div>
       <div class="items card" id="items">${itemsHtml()}</div>
     </div>
 
@@ -414,7 +414,7 @@ function renderGroup(){
     </div>`;
 }
 function goHome(){ if(state.channel){sb.removeChannel(state.channel);state.channel=null;} state.group=null; history.replaceState(null,"",location.pathname); renderHome(); }
-function setCat(c){state.cat=c;document.querySelectorAll(".cat").forEach(b=>b.classList.remove("active"));event.target.classList.add("active");document.getElementById("items").innerHTML=itemsHtml();}
+function setCat(c){state.cat=c;document.querySelectorAll(".cat").forEach(b=>b.classList.toggle("active", b.getAttribute("data-cat")===c));document.getElementById("items").innerHTML=itemsHtml();}
 function itemsHtml(){
   return MENU.filter(m=>m.cat===state.cat).map(m=>{
     const prices=SIZES.map((s,i)=>m.p[i]!=null?`${s.label} $${m.p[i]}`:null).filter(Boolean).join(" / ");
