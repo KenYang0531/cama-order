@@ -87,6 +87,13 @@
   .cats::-webkit-scrollbar{display:none}
   .cat{flex:none;padding:9px 15px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:700;font-size:14px;color:var(--muted)}
   .cat.active{background:var(--espresso);color:#fff;border-color:var(--espresso)}
+  .cat-en{font-weight:500;font-size:11px;opacity:.65}
+
+  /* thumbnails */
+  .thumb-wrap{position:relative;width:56px;height:56px;flex:none}
+  .thumb-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#f3ebdd;border-radius:12px;color:#cbb89b;font-size:22px}
+  .thumb-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:12px}
+  .sheet-photo{width:100%;height:160px;object-fit:cover;border-radius:14px;margin-bottom:14px;display:block;background:#f3ebdd}
 
   /* Menu items */
   .items{display:grid;gap:10px}
@@ -185,18 +192,17 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // prices: [M(12oz), L(16oz), XL(22oz)]，null = 該尺寸不供應
 // ice:true=限冰、hot:true=限熱、rec:true=推薦、caf:true=無咖啡因
 const CATS = [
-  {id:"black",  name:"黑咖"},
-  {id:"drip",   name:"精品手沖"},
-  {id:"milk",   name:"奶咖"},
-  {id:"others", name:"純茶・奶茶"},
+  {id:"black",  name:"黑咖",     en:"Black Coffee"},
+  {id:"drip",   name:"精品手沖", en:"Drip"},
+  {id:"milk",   name:"奶咖",     en:"Milk Coffee"},
+  {id:"others", name:"純茶・奶茶", en:"Others"},
 ];
 const MENU = [
   // 黑咖
   {id:"premium-americano",cat:"black",zh:"雙冠莊園精品美式",en:"Premium Americano",p:[80,100,120],rec:true},
   {id:"cama-americano",cat:"black",zh:"CAMA 金獎美式",en:"CAMA Americano",p:[65,80,95]},
   {id:"light-americano",cat:"black",zh:"微韻輕美式",en:"Light Americano",p:[65,80,95]},
-  {id:"cold-brew",cat:"black",zh:"精品冷萃",en:"Specialty Cold Brew",p:[100,115,130],ice:true,rec:true,desc:"花香耶加雪菲／堅果爵士／百蜜花園"},
-  {id:"espresso",cat:"black",zh:"濃縮咖啡",en:"Espresso",p:[70,null,null],hot:true,desc:"熱飲・限內用 30ml"},
+  {id:"cold-brew",cat:"black",zh:"精品冷萃",en:"Specialty Cold Brew",p:[100,115,130],ice:true,rec:true,variants:["花香耶加雪菲","堅果爵士","百蜜花園"]},
   // 精品手沖
   {id:"daily",cat:"drip",zh:"本日精品咖啡",en:"Daily Selected Coffee",p:[85,100,115],desc:"限店供應"},
   {id:"berry",cat:"drip",zh:"莓果女伶",en:"Berry Ballerina",p:[125,140,null],rec:true,desc:"水蜜桃／莓果／日曬・水果發酵"},
@@ -212,10 +218,10 @@ const MENU = [
   {id:"rich-milk-latte",cat:"milk",zh:"極厚乳三層拿鐵",en:"Rich Milk Latte",p:[105,null,null],rec:true,desc:"極厚乳"},
   {id:"cama-latte",cat:"milk",zh:"CAMA 金獎拿鐵",en:"CAMA Latte",p:[85,105,125]},
   {id:"light-latte",cat:"milk",zh:"微韻輕拿鐵",en:"Light Latte",p:[85,105,125]},
-  {id:"oat-latte",cat:"milk",zh:"燕麥拿鐵",en:"Oat Milk Latte",p:[105,125,145],rec:true,desc:"經典 OATLY／微韻輕 OATSIDE"},
+  {id:"oat-latte",cat:"milk",zh:"燕麥拿鐵",en:"Oat Milk Latte",p:[105,125,145],rec:true,variants:["經典","微韻輕"],desc:"經典 OATLY／微韻輕 OATSIDE"},
   {id:"cappuccino",cat:"milk",zh:"卡布奇諾",en:"Cappuccino",p:[85,105,125]},
   {id:"flavored-coffee",cat:"milk",zh:"特調咖啡",en:"Flavored Coffee",p:[75,90,105]},
-  {id:"flavored-latte",cat:"milk",zh:"風味拿鐵",en:"Flavored Latte",p:[95,115,135],desc:"海鹽焦糖／香草／蜂蜜／黑糖／榛果（點餐時口頭指定）"},
+  {id:"flavored-latte",cat:"milk",zh:"風味拿鐵",en:"Flavored Latte",p:[95,115,135],variants:["海鹽焦糖","香草","蜂蜜","焦糖","榛果"]},
   {id:"camellia-latte",cat:"milk",zh:"山茶花輕拿鐵",en:"Camellia Light Latte",p:[95,115,135],rec:true},
   {id:"caramel-macchiato",cat:"milk",zh:"焦糖瑪琪朵",en:"Caramel Macchiato",p:[95,115,135]},
   {id:"mocha",cat:"milk",zh:"摩卡咖啡",en:"Mocha",p:[110,130,150]},
@@ -242,6 +248,7 @@ const SIZES = [{k:"M",label:"M",sub:"12oz"},{k:"L",label:"L",sub:"16oz"},{k:"XL"
 const SUGARS = [{k:"full",label:"全糖"},{k:"half",label:"半糖"},{k:"light",label:"微糖"},{k:"none",label:"無糖"}];
 const SUGAR_LABEL = {full:"全糖",half:"半糖",light:"微糖",none:"無糖"};
 const menuById = Object.fromEntries(MENU.map(m=>[m.id,m]));
+const PHOTO_IDS = new Set(["cold-brew","berry","floral-yirga","yirga","mandheling-brazil","mandheling","premium-americano","premium-latte","oat-latte","flavored-coffee","flavored-latte","caramel-macchiato","black-tea","freshmilk-black-tea","flavored-milk-tea","alishan-oolong","freshmilk-oolong","mixed-berries","herbal","mango-rooibos","rich-milk-latte","pomona","mocha","matcha-milk","matcha-latte","light-americano","light-latte","choco-prince","camellia-latte","milkfoam-oolong","milkfoam-black-tea","milkfoam-sea-salt","greenjade","coffeejelly-freshmilk-tea","coffee-jelly-latte","choco-milk","cappuccino","cama-americano","cama-latte"]);
 
 /* ============ 狀態 ============ */
 let state = {view:"home", group:null, user:null, cart:[], orders:[], cat:"black", channel:null, exportTab:"list"};
@@ -385,7 +392,7 @@ function renderGroup(){
 
     ${closed?`<div class="banner section">此團已${g.status==="closed"?"結單":"封存"}，僅供檢視與匯出。</div>`:`
     <div class="section">
-      <div class="cats" id="cats">${CATS.map(c=>`<button class="cat ${c.id===state.cat?'active':''}" onclick="setCat('${c.id}')">${c.name}</button>`).join("")}</div>
+      <div class="cats" id="cats">${CATS.map(c=>`<button class="cat ${c.id===state.cat?'active':''}" onclick="setCat('${c.id}')">${c.name} <span class="cat-en">${c.en}</span></button>`).join("")}</div>
       <div class="items card" id="items">${itemsHtml()}</div>
     </div>
 
@@ -412,11 +419,14 @@ function itemsHtml(){
   return MENU.filter(m=>m.cat===state.cat).map(m=>{
     const prices=SIZES.map((s,i)=>m.p[i]!=null?`${s.label} $${m.p[i]}`:null).filter(Boolean).join(" / ");
     const tags=[m.ice?`<span class="tag tag-ice">限冰</span>`:"",m.hot?`<span class="tag tag-hot">限熱</span>`:"",m.rec?`<span class="tag tag-rec">推薦</span>`:"",m.caf?`<span class="tag tag-caf">無咖啡因</span>`:""].join("");
+    const thumb=`<span class="thumb-wrap"><span class="thumb-ph">☕</span>${PHOTO_IDS.has(m.id)?`<img class="thumb-img" src="img/${m.id}.jpg" alt="" loading="lazy" onerror="this.style.display='none'">`:""}</span>`;
+    const sub = m.variants?`<div class="item-desc">可選：${esc(m.variants.join("、"))}</div>`:(m.desc?`<div class="item-desc">${esc(m.desc)}</div>`:"");
     return `<button class="item" onclick="openItem('${m.id}')">
+      ${thumb}
       <div class="item-main">
         <div class="item-name">${esc(m.zh)} ${tags}</div>
         <div class="item-en">${esc(m.en)}</div>
-        ${m.desc?`<div class="item-desc">${esc(m.desc)}</div>`:""}
+        ${sub}
         ${SHOW_PRICE?`<div class="item-desc">${prices}</div>`:""}
       </div>
       <div class="plus">＋</div>
@@ -429,7 +439,7 @@ let draft=null;
 function openItem(id){
   const m=menuById[id];
   const firstSize = SIZES.find((s,i)=>m.p[i]!=null)?.k || "M";
-  draft={id, size:firstSize, temp:null, sugar:"half", note:""};
+  draft={id, size:firstSize, temp:null, sugar:"half", note:"", variant:(m.variants?m.variants[0]:null)};
   fixTemp();
   renderItemSheet();
   openSheetRaw();
@@ -445,7 +455,12 @@ function renderItemSheet(){
   const m=menuById[draft.id]; const idx={M:0,L:1,XL:2}[draft.size];
   const price=m.p[idx];
   const tempLocked = m.hot||m.ice||draft.size==="XL";
-  const html=`<h2>${esc(m.zh)}</h2><div class="hint">${esc(m.en)}${m.desc?" · "+esc(m.desc):""}</div>
+  const photo = PHOTO_IDS.has(m.id)?`<img class="sheet-photo" src="img/${m.id}.jpg" alt="" onerror="this.style.display='none'">`:"";
+  const variantGroup = m.variants?`<div class="opt-group"><div class="opt-label">選項</div><div class="opts">
+      ${m.variants.map(v=>`<button class="opt ${draft.variant===v?'on':''}" onclick="pickVariant('${v}')">${v}</button>`).join("")}
+    </div></div>`:"";
+  const html=`${photo}<h2>${esc(m.zh)}</h2><div class="hint">${esc(m.en)}${m.desc?" · "+esc(m.desc):""}</div>
+    ${variantGroup}
     <div class="opt-group"><div class="opt-label">尺寸</div><div class="opts">
       ${SIZES.map((s,i)=>`<button class="opt ${draft.size===s.k?'on':''}" ${m.p[i]==null?'disabled':''} onclick="pickSize('${s.k}')">${s.label}<span class="sub">${s.sub}${m.p[i]!=null&&SHOW_PRICE?` · $${m.p[i]}`:""}</span></button>`).join("")}
     </div></div>
@@ -462,22 +477,24 @@ function renderItemSheet(){
   document.getElementById("sheet").innerHTML=html;
 }
 function pickSize(k){draft.size=k;fixTemp();syncNote();renderItemSheet();}
+function pickVariant(v){draft.variant=v;syncNote();renderItemSheet();}
 function pickTemp(t){draft.temp=t;syncNote();renderItemSheet();}
 function pickSugar(s){draft.sugar=s;syncNote();renderItemSheet();}
 function syncNote(){const n=document.getElementById("noteIn");if(n)draft.note=n.value;}
 function addToCart(){
   syncNote();
   const m=menuById[draft.id]; const idx={M:0,L:1,XL:2}[draft.size];
-  state.cart.push({item_id:m.id,item_name:m.zh,category:m.cat,size:draft.size,temp:draft.temp,sugar:draft.sugar,price:m.p[idx]||null,note:draft.note.trim()});
+  state.cart.push({item_id:m.id,item_name:m.zh,category:m.cat,variant:draft.variant||null,size:draft.size,temp:draft.temp,sugar:draft.sugar,price:m.p[idx]||null,note:draft.note.trim()});
   closeSheet();
   document.getElementById("cartCard").innerHTML=cartHtml();
   toast("已加入 "+m.zh);
 }
+function dispName(o){return o.variant?`${o.item_name}（${o.variant}）`:o.item_name;}
 function specText(o){return `${o.size}/${o.temp==="ice"?"冰":"熱"}/${SUGAR_LABEL[o.sugar]}${o.note?` · ${o.note}`:""}`;}
 function cartHtml(){
   if(!state.cart.length) return `<h2>我的訂單</h2><div class="empty">點上面的品項加入這裡，填名字後送出。</div>`;
   return `<h2>我的訂單（${state.cart.length} 杯）</h2>`+state.cart.map((o,i)=>`<div class="line-item">
-      <div class="li-main"><div class="li-name">${esc(o.item_name)}</div>
+      <div class="li-main"><div class="li-name">${esc(dispName(o))}</div>
         <div class="li-spec"><span class="chip chip-${o.temp}">${o.temp==="ice"?"冰":"熱"}</span>${o.size} · ${SUGAR_LABEL[o.sugar]}${o.note?` · ${esc(o.note)}`:""}</div></div>
       <button class="icon-btn" onclick="removeCart(${i})">✕</button>
     </div>`).join("")+`<button class="btn btn-primary btn-block" style="margin-top:14px" onclick="submitOrder()">送出訂單（${state.cart.length} 杯）</button>`;
@@ -507,7 +524,7 @@ async function loadLast(){
     const {data}=await sb.from("orders").select("*").eq("user_email",state.user.email).neq("group_id",state.group.id).order("created_at",{ascending:false}).limit(30);
     if(data&&data.length){
       const lastGid=data[0].group_id;
-      const items=data.filter(o=>o.group_id===lastGid).map(o=>({item_id:o.item_id,item_name:o.item_name,category:o.category,size:o.size,temp:o.temp,sugar:o.sugar,price:o.price,note:o.note||""}));
+      const items=data.filter(o=>o.group_id===lastGid).map(o=>({item_id:o.item_id,item_name:o.item_name,category:o.category,variant:o.variant||null,size:o.size,temp:o.temp,sugar:o.sugar,price:o.price,note:o.note||""}));
       state.cart=state.cart.concat(items);
       document.getElementById("cartCard").innerHTML=cartHtml();
       toast(`帶入上次 ${items.length} 杯`); return;
@@ -531,7 +548,7 @@ function boardHtml(){
   return Object.entries(byPerson).map(([name,list])=>`<div class="section" style="margin-top:6px">
     <div class="li-name">${esc(name)} <span class="hint">· ${list.length} 杯</span></div>
     ${list.map(o=>`<div class="line-item">
-      <div class="li-main"><div class="li-spec"><span class="chip chip-${o.temp}">${o.temp==="ice"?"冰":"熱"}</span>${esc(o.item_name)} · ${o.size} · ${SUGAR_LABEL[o.sugar]}${o.note?` · ${esc(o.note)}`:""}</div></div>
+      <div class="li-main"><div class="li-spec"><span class="chip chip-${o.temp}">${o.temp==="ice"?"冰":"熱"}</span>${esc(dispName(o))} · ${o.size} · ${SUGAR_LABEL[o.sugar]}${o.note?` · ${esc(o.note)}`:""}</div></div>
       ${mine.includes(o.id)?`<button class="icon-btn" title="移除我的這杯" onclick="delOrder('${o.id}')">🗑</button>`:""}
     </div>`).join("")}
   </div>`).join("");
@@ -563,17 +580,17 @@ function buildExport(){
   // 訂單清單（整併）
   const map=new Map();
   orders.forEach(o=>{
-    const key=`${o.category}|${o.item_name}|${o.size}|${o.temp}|${o.sugar}|${o.note||""}`;
+    const key=`${o.category}|${o.item_name}|${o.variant||""}|${o.size}|${o.temp}|${o.sugar}|${o.note||""}`;
     if(!map.has(key))map.set(key,{...o,qty:0});
     map.get(key).qty++;
   });
   const order=CATS.map(c=>c.id);
   const listArr=[...map.values()].sort((a,b)=>order.indexOf(a.category)-order.indexOf(b.category)||a.item_name.localeCompare(b.item_name,"zh"));
-  const list=listArr.map((o,i)=>`${i+1}. ${o.item_name}　${o.size}/${o.temp==="ice"?"冰":"熱"}/${SUGAR_LABEL[o.sugar]}${o.note?`（${o.note}）`:""}　×${o.qty}`).join("\n");
+  const list=listArr.map((o,i)=>`${i+1}. ${dispName(o)}　${o.size}/${o.temp==="ice"?"冰":"熱"}/${SUGAR_LABEL[o.sugar]}${o.note?`（${o.note}）`:""}　×${o.qty}`).join("\n");
   // 對應名單
   const byPerson={};
   orders.forEach(o=>{(byPerson[o.user_name]=byPerson[o.user_name]||[]).push(o);});
-  const names=Object.entries(byPerson).map(([n,l])=>`・${n}：`+l.map(o=>`${o.item_name} ${o.size}/${o.temp==="ice"?"冰":"熱"}/${SUGAR_LABEL[o.sugar]}${o.note?`(${o.note})`:""}`).join("、")).join("\n");
+  const names=Object.entries(byPerson).map(([n,l])=>`・${n}：`+l.map(o=>`${dispName(o)} ${o.size}/${o.temp==="ice"?"冰":"熱"}/${SUGAR_LABEL[o.sugar]}${o.note?`(${o.note})`:""}`).join("、")).join("\n");
   const listText=`${head}\n────────────\n▍訂單清單（拿去點的）\n${list||"（無）"}`;
   const nameText=`${head}\n────────────\n▍對應名單（回來發的）\n${names||"（無）"}`;
   return {listText,nameText};
