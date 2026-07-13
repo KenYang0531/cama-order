@@ -115,9 +115,9 @@
   .plus{width:32px;height:32px;border-radius:10px;background:var(--amber);color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
 
   /* Sheet / modal */
-  .overlay{position:fixed;inset:0;background:rgba(46,32,25,.45);z-index:50;display:none;align-items:flex-end;justify-content:center}
+  .overlay{position:fixed;inset:0;background:rgba(46,32,25,.45);z-index:50;display:none;align-items:flex-end;justify-content:center;padding-top:env(safe-area-inset-top)}
   .overlay.show{display:flex}
-  .sheet{background:var(--bg);width:100%;max-width:760px;border-radius:22px 22px 0 0;max-height:90vh;display:flex;flex-direction:column;animation:slideup .22s ease}
+  .sheet{background:var(--bg);width:100%;max-width:760px;border-radius:22px 22px 0 0;max-height:88vh;max-height:88dvh;display:flex;flex-direction:column;animation:slideup .22s ease}
   .sheet-head{display:flex;justify-content:flex-end;padding:12px 12px 0;flex:none}
   .sheet-close{width:36px;height:36px;border-radius:50%;background:#efe4d3;color:#6b5946;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center}
   .sheet-close:active{background:#e6d8c2}
