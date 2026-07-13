@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CAMA 團購點餐</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FBF6EE; --card:#FFFFFF; --espresso:#2E2019; --ink:#3A2A20;
+    --amber:#E0820C; --amber-dk:#B8630A; --line:#ECE1D2; --muted:#9C8B7A;
+    --ice:#2E86C1; --hot:#C0392B; --ok:#2E7D4F; --danger:#C0392B;
+    --shadow:0 1px 2px rgba(46,32,25,.06),0 8px 24px rgba(46,32,25,.06);
+    --radius:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input,select,textarea{font-family:inherit;font-size:16px}
+  .wrap{max-width:760px;margin:0 auto;padding:0 16px 48px}
+
+  /* Top bar */
+  .topbar{position:sticky;top:0;z-index:30;background:rgba(251,246,238,.92);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .topbar-in{max-width:760px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:12px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.5px;color:var(--espresso)}
+  .cup{position:relative;width:26px;height:26px;flex:none}
+  .cup svg{display:block}
+  .steam{position:absolute;top:-6px;left:8px;width:3px;height:8px;border-radius:2px;background:var(--muted);opacity:.5;
+    animation:steam 2.4s ease-in-out infinite}
+  .steam:nth-child(2){left:13px;animation-delay:.6s}
+  @keyframes steam{0%{transform:translateY(2px) scaleY(.6);opacity:0}40%{opacity:.5}100%{transform:translateY(-6px) scaleY(1.1);opacity:0}}
+  @media (prefers-reduced-motion:reduce){.steam{animation:none;opacity:.3}}
+  .brand small{font-weight:500;color:var(--muted);letter-spacing:0}
+  .spacer{flex:1}
+  .top-actions{display:flex;align-items:center;gap:8px}
+
+  /* Buttons */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    padding:11px 16px;border-radius:12px;font-weight:700;font-size:15px;transition:.15s;white-space:nowrap}
+  .btn-primary{background:var(--amber);color:#fff;box-shadow:0 2px 8px rgba(224,130,12,.28)}
+  .btn-primary:active{background:var(--amber-dk)}
+  .btn-ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .btn-ghost:active{background:#f6efe4}
+  .btn-sm{padding:7px 12px;font-size:13px;border-radius:10px}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn-block{width:100%}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .pad{padding:16px}
+  h1{font-size:22px;font-weight:900;color:var(--espresso);margin:0}
+  h2{font-size:16px;font-weight:900;color:var(--espresso);margin:0 0 10px}
+  .muted{color:var(--muted)}
+  .hint{font-size:13px;color:var(--muted)}
+
+  /* Home */
+  .hero{padding:22px 4px 8px}
+  .hero h1{font-size:26px;line-height:1.25}
+  .hero p{margin:6px 0 0;color:var(--muted)}
+  .group-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+  .group-row:last-child{border-bottom:none}
+  .group-row:active{background:#faf3e8}
+  .g-name{font-weight:700}
+  .g-meta{font-size:12px;color:var(--muted)}
+  .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px}
+  .pill-open{background:#e8f6ee;color:var(--ok)}
+  .pill-closed{background:#fdeeda;color:var(--amber-dk)}
+  .pill-archived{background:#efeae3;color:var(--muted)}
+  .create-box{display:flex;gap:8px;margin-top:12px}
+  .create-box input{flex:1;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff}
+
+  /* Identity */
+  .idbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .idbar input{flex:1;min-width:140px;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:#fff}
+  .avatar{width:34px;height:34px;border-radius:50%;background:var(--amber);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;flex:none;overflow:hidden}
+  .avatar img{width:100%;height:100%;object-fit:cover}
+
+  /* Category tabs */
+  .cats{display:flex;gap:8px;overflow-x:auto;padding:4px 0 10px;margin:0 -4px;scrollbar-width:none}
+  .cats::-webkit-scrollbar{display:none}
+  .cat{flex:none;padding:9px 15px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:700;font-size:14px;color:var(--muted)}
+  .cat.active{background:var(--espresso);color:#fff;border-color:var(--espresso)}
+
+  /* Menu items */
+  .items{display:grid;gap:10px}
+  .item{display:flex;align-items:center;gap:12px;padding:14px;text-align:left;width:100%}
+  .item:active{background:#faf3e8}
+  .item-main{flex:1;min-width:0}
+  .item-name{font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .item-en{font-size:12px;color:var(--muted);margin-top:2px}
+  .item-desc{font-size:12px;color:var(--muted);margin-top:3px}
+  .tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px}
+  .tag-ice{background:#e7f1fb;color:var(--ice)}
+  .tag-hot{background:#fbeae7;color:var(--hot)}
+  .tag-rec{background:#fdf0d6;color:var(--amber-dk)}
+  .tag-caf{background:#eef2ec;color:var(--ok)}
+  .item-price{font-size:13px;color:var(--muted);white-space:nowrap}
+  .plus{width:32px;height:32px;border-radius:10px;background:var(--amber);color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+
+  /* Sheet / modal */
+  .overlay{position:fixed;inset:0;background:rgba(46,32,25,.45);z-index:50;display:none;align-items:flex-end;justify-content:center}
+  .overlay.show{display:flex}
+  .sheet{background:var(--bg);width:100%;max-width:760px;border-radius:22px 22px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto;animation:slideup .22s ease}
+  @keyframes slideup{from{transform:translateY(30px);opacity:.6}to{transform:translateY(0);opacity:1}}
+  @media(min-width:760px){.overlay{align-items:center}.sheet{border-radius:22px;margin:0 16px}}
+  .sheet h2{font-size:18px}
+  .opt-group{margin-top:16px}
+  .opt-label{font-size:13px;font-weight:700;color:var(--muted);margin-bottom:8px}
+  .opts{display:flex;gap:8px;flex-wrap:wrap}
+  .opt{padding:10px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;font-weight:700;font-size:14px}
+  .opt.on{border-color:var(--amber);background:#fff7ec;color:var(--amber-dk)}
+  .opt:disabled{opacity:.35}
+  .opt .sub{display:block;font-size:11px;font-weight:500;color:var(--muted)}
+  .note-in{width:100%;margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff}
+
+  /* Cart / board */
+  .line-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px dashed var(--line)}
+  .line-item:last-child{border-bottom:none}
+  .li-main{flex:1;min-width:0}
+  .li-name{font-weight:700}
+  .li-spec{font-size:12px;color:var(--muted);margin-top:2px}
+  .chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;margin-right:4px}
+  .chip-ice{background:#e7f1fb;color:var(--ice)}
+  .chip-hot{background:#fbeae7;color:var(--hot)}
+  .qty{font-weight:900;color:var(--amber-dk)}
+  .icon-btn{width:30px;height:30px;border-radius:8px;background:#f6efe4;color:var(--muted);font-size:16px;display:flex;align-items:center;justify-content:center;flex:none}
+  .icon-btn:active{background:#efe4d3}
+
+  .stat{display:flex;gap:8px;align-items:baseline}
+  .stat b{font-size:28px;font-weight:900;color:var(--espresso)}
+
+  .seg{display:flex;background:#f1e8da;border-radius:12px;padding:4px;margin-bottom:14px}
+  .seg button{flex:1;padding:9px;border-radius:9px;font-weight:700;font-size:14px;color:var(--muted)}
+  .seg button.on{background:#fff;color:var(--espresso);box-shadow:var(--shadow)}
+
+  pre.out{white-space:pre-wrap;word-break:break-word;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;font-family:"Noto Sans TC",monospace;font-size:13.5px;line-height:1.7;margin:0}
+
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--espresso);color:#fff;padding:12px 20px;border-radius:999px;font-weight:700;font-size:14px;opacity:0;transition:.25s;z-index:80;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .empty{text-align:center;color:var(--muted);padding:26px 10px;font-size:14px}
+  .row-between{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .section{margin-top:16px}
+  .link-btn{color:var(--amber-dk);font-weight:700;font-size:14px}
+  .divider{height:1px;background:var(--line);margin:14px 0}
+  .banner{background:#fff7ec;border:1px solid #f3ddb4;color:#8a5a08;border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <span class="cup">
+        <span class="steam"></span><span class="steam"></span>
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M4 9h15v7a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9Z" fill="#E0820C"/><path d="M19 11h2.5a2.5 2.5 0 0 1 0 5H19" stroke="#B8630A" stroke-width="2"/></svg>
+      </span>
+      <span>CAMA 團購<small id="brandSub"></small></span>
+    </div>
+    <div class="spacer"></div>
+    <div class="top-actions" id="topActions"></div>
+  </div>
+</div>
+
+<div class="wrap" id="app"></div>
+
+<div class="overlay" id="overlay"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ============ 設定 ============ */
+const SUPABASE_URL = "https://ndaiqzoczyxkbugcvoao.supabase.co";
+const SUPABASE_KEY = "sb_publishable_57Ztya3UaLZe1YWKrDUEvw_GwUweEJ1";
+const SHOW_PRICE = true; // 想隱藏菜單價格改成 false
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ============ 菜單 ============ */
+// prices: [M(12oz), L(16oz), XL(22oz)]，null = 該尺寸不供應
+// ice:true=限冰、hot:true=限熱、rec:true=推薦、caf:true=無咖啡因
+const CATS = [
+  {id:"black",  name:"黑咖"},
+  {id:"drip",   name:"精品手沖"},
+  {id:"milk",   name:"奶咖"},
+  {id:"others", name:"純茶・奶茶"},
+];
+const MENU = [
+  // 黑咖
+  {id:"premium-americano",cat:"black",zh:"雙冠莊園精品美式",en:"Premium Americano",p:[80,100,120],rec:true},
+  {id:"cama-americano",cat:"black",zh:"CAMA 金獎美式",en:"CAMA Americano",p:[65,80,95]},
+  {id:"light-americano",cat:"black",zh:"微韻輕美式",en:"Light Americano",p:[65,80,95]},
+  {id:"cold-brew",cat:"black",zh:"精品冷萃",en:"Specialty Cold Brew",p:[100,115,130],ice:true,rec:true,desc:"花香耶加雪菲／堅果爵士／百蜜花園"},
+  {id:"espresso",cat:"black",zh:"濃縮咖啡",en:"Espresso",p:[70,null,null],hot:true,desc:"熱飲・限內用 30ml"},
+  // 精品手沖
+  {id:"daily",cat:"drip",zh:"本日精品咖啡",en:"Daily Selected Coffee",p:[85,100,115],desc:"限店供應"},
+  {id:"berry",cat:"drip",zh:"莓果女伶",en:"Berry Ballerina",p:[125,140,null],rec:true,desc:"水蜜桃／莓果／日曬・水果發酵"},
+  {id:"floral-yirga",cat:"drip",zh:"花香耶加雪菲",en:"Floral Yirgacheffe",p:[105,120,null],rec:true,desc:"蜜桃／香檳葡萄／蘋果・日曬 G1"},
+  {id:"yirga",cat:"drip",zh:"耶加雪菲",en:"Yirgacheffe",p:[95,110,null],desc:"檸檬／茉莉花香／水洗"},
+  {id:"pomona",cat:"drip",zh:"果樹女神",en:"Pomona",p:[95,110,null],desc:"熱帶水果／日曬"},
+  {id:"greenjade",cat:"drip",zh:"堅果爵士",en:"Green Jade Specialty",p:[115,130,null],rec:true,desc:"夏威夷果／楓糖／水洗"},
+  {id:"mandheling-brazil",cat:"drip",zh:"黃金曼巴",en:"Golden Mandheling & Brazil",p:[105,120,null],rec:true,desc:"烤花生／太妃糖／半水洗"},
+  {id:"choco-prince",cat:"drip",zh:"巧克力王子",en:"Chocolate Prince",p:[95,110,null],desc:"黑糖／可可豆／水洗"},
+  {id:"mandheling",cat:"drip",zh:"黃金曼特寧",en:"Golden Mandheling",p:[115,130,null],desc:"蜂蜜甘醇／柴燒黑糖／半水洗"},
+  // 奶咖
+  {id:"premium-latte",cat:"milk",zh:"雙冠莊園精品拿鐵",en:"Premium Latte",p:[105,125,145],rec:true},
+  {id:"rich-milk-latte",cat:"milk",zh:"極厚乳三層拿鐵",en:"Rich Milk Latte",p:[105,null,null],rec:true,desc:"極厚乳"},
+  {id:"cama-latte",cat:"milk",zh:"CAMA 金獎拿鐵",en:"CAMA Latte",p:[85,105,125]},
+  {id:"light-latte",cat:"milk",zh:"微韻輕拿鐵",en:"Light Latte",p:[85,105,125]},
+  {id:"oat-latte",cat:"milk",zh:"燕麥拿鐵",en:"Oat Milk Latte",p:[105,125,145],rec:true,desc:"經典 OATLY／微韻輕 OATSIDE"},
+  {id:"cappuccino",cat:"milk",zh:"卡布奇諾",en:"Cappuccino",p:[85,105,125]},
+  {id:"flavored-coffee",cat:"milk",zh:"特調咖啡",en:"Flavored Coffee",p:[75,90,105]},
+  {id:"flavored-latte",cat:"milk",zh:"風味拿鐵",en:"Flavored Latte",p:[95,115,135],desc:"海鹽焦糖／香草／蜂蜜／黑糖／榛果（點餐時口頭指定）"},
+  {id:"camellia-latte",cat:"milk",zh:"山茶花輕拿鐵",en:"Camellia Light Latte",p:[95,115,135],rec:true},
+  {id:"caramel-macchiato",cat:"milk",zh:"焦糖瑪琪朵",en:"Caramel Macchiato",p:[95,115,135]},
+  {id:"mocha",cat:"milk",zh:"摩卡咖啡",en:"Mocha",p:[110,130,150]},
+  {id:"matcha-latte",cat:"milk",zh:"抹茶拿鐵",en:"Matcha Coffee Latte",p:[100,120,140]},
+  {id:"coffee-jelly-latte",cat:"milk",zh:"咖啡凍飲拿鐵",en:"Coffee Jelly Latte",p:[null,105,125],ice:true,rec:true},
+  {id:"milkfoam-sea-salt",cat:"milk",zh:"奶蓋海鹽美式",en:"Milk Foam Sea Salt Coffee",p:[null,100,110],ice:true,rec:true},
+  // 純茶・奶茶
+  {id:"black-tea",cat:"others",zh:"熟香紅茶",en:"Black Tea",p:[null,40,45]},
+  {id:"milkfoam-black-tea",cat:"others",zh:"奶蓋熟香紅茶",en:"Milk Foam Black Tea",p:[null,55,65],ice:true},
+  {id:"freshmilk-black-tea",cat:"others",zh:"鮮奶熟香紅茶",en:"Black Tea w/ Fresh Milk",p:[null,60,75],rec:true},
+  {id:"coffeejelly-freshmilk-tea",cat:"others",zh:"咖啡凍飲鮮奶紅茶",en:"Black Tea w/ Coffee Jelly & Fresh Milk",p:[null,90,105],ice:true},
+  {id:"honey-freshmilk-tea",cat:"others",zh:"蜂蜜風味鮮奶紅茶",en:"Black Tea w/ Fresh Milk & Honey",p:[null,70,85]},
+  {id:"flavored-milk-tea",cat:"others",zh:"特調熟香奶茶",en:"Black Tea w/ Flavored Milk",p:[null,55,65]},
+  {id:"alishan-oolong",cat:"others",zh:"阿里山烏龍",en:"Alishan Oolong Tea",p:[null,45,50],rec:true},
+  {id:"milkfoam-oolong",cat:"others",zh:"奶蓋阿里山烏龍",en:"Milk Foam Alishan Oolong",p:[null,60,70],ice:true},
+  {id:"freshmilk-oolong",cat:"others",zh:"鮮奶阿里山烏龍",en:"Alishan Oolong w/ Fresh Milk",p:[null,65,80]},
+  {id:"mixed-berries",cat:"others",zh:"綜合莓果茶",en:"Mixed Berries Tea",p:[null,55,null]},
+  {id:"herbal",cat:"others",zh:"花草茶",en:"Herbal Tea",p:[null,50,70],caf:true},
+  {id:"mango-rooibos",cat:"others",zh:"芒果風味國寶茶",en:"Mango Flavored Rooibos Tea",p:[null,50,null],caf:true},
+  {id:"matcha-milk",cat:"others",zh:"抹茶歐蕾",en:"Matcha Milk",p:[75,85,100]},
+  {id:"choco-milk",cat:"others",zh:"可可歐蕾",en:"Chocolate Milk",p:[95,110,125]},
+];
+const SIZES = [{k:"M",label:"M",sub:"12oz"},{k:"L",label:"L",sub:"16oz"},{k:"XL",label:"XL",sub:"22oz"}];
+const SUGARS = [{k:"full",label:"全糖"},{k:"half",label:"半糖"},{k:"light",label:"微糖"},{k:"none",label:"無糖"}];
+const SUGAR_LABEL = {full:"全糖",half:"半糖",light:"微糖",none:"無糖"};
+const menuById = Object.fromEntries(MENU.map(m=>[m.id,m]));
+
+/* ============ 狀態 ============ */
+let state = {view:"home", group:null, user:null, cart:[], orders:[], cat:"black", channel:null, exportTab:"list"};
+const $app = document.getElementById("app");
+
+/* ============ 工具 ============ */
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),1800);}
+function esc(s){return (s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function ls(k,v){if(v===undefined){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}localStorage.setItem(k,JSON.stringify(v));}
+function fmtDate(d){const x=new Date(d);return `${x.getMonth()+1}/${x.getDate()} ${String(x.getHours()).padStart(2,"0")}:${String(x.getMinutes()).padStart(2,"0")}`;}
+function myName(){return (document.getElementById("nameIn")?.value || state.user?.name || "").trim();}
+function myOrderIds(gid){return ls("cama_mine_"+gid) || [];}
+function addMyOrderId(gid,id){const a=myOrderIds(gid);a.push(id);ls("cama_mine_"+gid,a);}
+
+/* ============ 初始化 ============ */
+async function init(){
+  const {data:{session}} = await sb.auth.getSession();
+  if(session?.user){
+    const u=session.user;
+    state.user={name:u.user_metadata?.full_name||u.user_metadata?.name||u.email, email:u.email, avatar:u.user_metadata?.avatar_url||null};
+    ls("cama_name", state.user.name);
+  }
+  const params=new URLSearchParams(location.search);
+  const gid=params.get("g");
+  if(gid){ await openGroup(gid); } else { renderHome(); }
+  renderTop();
+}
+window.addEventListener("load", init);
+
+/* ============ 頂列 ============ */
+function renderTop(){
+  const el=document.getElementById("topActions");
+  const sub=document.getElementById("brandSub");
+  sub.textContent = state.view==="group" && state.group ? "" : "";
+  if(state.user){
+    el.innerHTML = `<div class="avatar" title="${esc(state.user.email||"")}">${state.user.avatar?`<img src="${state.user.avatar}">`:esc((state.user.name||"?").slice(0,1))}</div>
+      <button class="btn btn-ghost btn-sm" onclick="signOut()">登出</button>`;
+  } else {
+    el.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="signIn()">Google 登入</button>`;
+  }
+}
+async function signIn(){
+  const {error} = await sb.auth.signInWithOAuth({provider:"google", options:{redirectTo:location.href}});
+  if(error){ toast("Google 登入尚未啟用（需在 Supabase 後台開啟）"); }
+}
+async function signOut(){ await sb.auth.signOut(); state.user=null; toast("已登出"); location.reload(); }
+
+/* ============ 首頁：團列表 ============ */
+async function renderHome(){
+  state.view="home";
+  $app.innerHTML=`<div class="hero"><h1>開一團，大家各自點</h1><p>建立團購 → 分享連結 → 送出後自動整理成「訂單清單」與「對應名單」。</p></div>
+    <div class="card pad section">
+      <h2>建立新團</h2>
+      <div class="create-box">
+        <input id="newGroupName" placeholder="例如：週三下午團" maxlength="40">
+        <button class="btn btn-primary" onclick="createGroup()">開團</button>
+      </div>
+    </div>
+    <div class="section" id="groupList"><div class="empty">載入中…</div></div>`;
+  document.getElementById("newGroupName").addEventListener("keydown",e=>{if(e.key==="Enter")createGroup();});
+  loadGroups();
+}
+async function loadGroups(){
+  const {data,error}=await sb.from("groups").select("*").neq("status","archived").order("created_at",{ascending:false});
+  const box=document.getElementById("groupList");
+  if(error){box.innerHTML=`<div class="empty">讀取失敗：${esc(error.message)}</div>`;return;}
+  // 各團杯數
+  const counts={};
+  if(data.length){
+    const {data:od}=await sb.from("orders").select("group_id").in("group_id",data.map(g=>g.id));
+    (od||[]).forEach(o=>counts[o.group_id]=(counts[o.group_id]||0)+1);
+  }
+  let html = `<div class="card">`;
+  if(!data.length){ html += `<div class="empty">還沒有進行中的團，開一個吧 ☕</div>`; }
+  else{
+    html += data.map(g=>`<div class="group-row" onclick="openGroup('${g.id}')">
+      <div class="li-main"><div class="g-name">${esc(g.name)}</div>
+        <div class="g-meta">${fmtDate(g.created_at)} · ${counts[g.id]||0} 杯</div></div>
+      ${statusPill(g.status)}
+    </div>`).join("");
+  }
+  html += `</div><div class="row-between section"><span class="hint">封存的團會從這裡隱藏</span><button class="link-btn" onclick="showArchived()">查看已封存 ›</button></div>`;
+  box.innerHTML=html;
+}
+function statusPill(s){return s==="open"?`<span class="pill pill-open">點餐中</span>`:s==="closed"?`<span class="pill pill-closed">已結單</span>`:`<span class="pill pill-archived">已封存</span>`;}
+async function showArchived(){
+  const {data}=await sb.from("groups").select("*").eq("status","archived").order("created_at",{ascending:false});
+  openSheet(`<h2>已封存的團</h2>${(data&&data.length)?`<div class="card" style="margin-top:8px">`+data.map(g=>`<div class="group-row" onclick="closeSheet();openGroup('${g.id}')"><div class="li-main"><div class="g-name">${esc(g.name)}</div><div class="g-meta">${fmtDate(g.created_at)}</div></div><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();reopenGroup('${g.id}')">取消封存</button></div>`).join("")+`</div>`:`<div class="empty">沒有已封存的團</div>`}`);
+}
+async function createGroup(){
+  const name=document.getElementById("newGroupName").value.trim();
+  if(!name){toast("先幫這團取個名字");return;}
+  const {data,error}=await sb.from("groups").insert({name,created_by:state.user?.name||null,status:"open"}).select().single();
+  if(error){toast("開團失敗："+error.message);return;}
+  openGroup(data.id);
+}
+
+/* ============ 團內：點餐 ============ */
+async function openGroup(id){
+  const {data:g,error}=await sb.from("groups").select("*").eq("id",id).single();
+  if(error||!g){toast("找不到這個團");renderHome();return;}
+  state.group=g; state.view="group"; state.cart=[]; state.cat="black";
+  history.replaceState(null,"",location.pathname+"?g="+id);
+  // 預填姓名
+  if(!state.user){const savedName=ls("cama_name"); if(savedName) state._savedName=savedName;}
+  renderGroup();
+  renderTop();
+  await refreshOrders();
+  subscribe(id);
+}
+function subscribe(gid){
+  if(state.channel){sb.removeChannel(state.channel);}
+  state.channel=sb.channel("orders-"+gid)
+    .on("postgres_changes",{event:"*",schema:"public",table:"orders",filter:"group_id=eq."+gid},()=>refreshOrders())
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"groups",filter:"id=eq."+gid},payload=>{state.group=payload.new;renderGroup();})
+    .subscribe();
+}
+async function refreshOrders(){
+  const {data}=await sb.from("orders").select("*").eq("group_id",state.group.id).order("created_at",{ascending:true});
+  state.orders=data||[];
+  const bd=document.getElementById("boardBox"); if(bd) bd.innerHTML=boardHtml();
+  const cnt=document.getElementById("cupCount"); if(cnt) cnt.textContent=state.orders.length;
+}
+function renderGroup(){
+  const g=state.group;
+  const closed = g.status!=="open";
+  const nameVal = state.user?.name || state._savedName || "";
+  $app.innerHTML=`
+    <div class="row-between section">
+      <div><button class="link-btn" onclick="goHome()">‹ 所有團</button>
+        <h1 style="margin-top:6px">${esc(g.name)} ${statusPill(g.status)}</h1></div>
+    </div>
+    <div class="card pad section">
+      <div class="idbar">
+        <div class="avatar">${state.user?.avatar?`<img src="${state.user.avatar}">`:esc((nameVal||"?").slice(0,1)||"?")}</div>
+        <input id="nameIn" placeholder="你的名字" value="${esc(nameVal)}" ${state.user?"readonly":""}>
+        <button class="btn btn-ghost btn-sm" onclick="loadLast()">帶入上次訂單</button>
+      </div>
+      ${state.user?`<div class="hint" style="margin-top:8px">已用 Google 登入：${esc(state.user.email||"")}</div>`:`<div class="hint" style="margin-top:8px">未登入也能點；<a class="link-btn" onclick="signIn()" style="cursor:pointer">用 Google 登入</a>可自動帶名字與上次訂單。</div>`}
+    </div>
+
+    ${closed?`<div class="banner section">此團已${g.status==="closed"?"結單":"封存"}，僅供檢視與匯出。</div>`:`
+    <div class="section">
+      <div class="cats" id="cats">${CATS.map(c=>`<button class="cat ${c.id===state.cat?'active':''}" onclick="setCat('${c.id}')">${c.name}</button>`).join("")}</div>
+      <div class="items card" id="items">${itemsHtml()}</div>
+    </div>
+
+    <div class="card pad section" id="cartCard">${cartHtml()}</div>
+    `}
+
+    <div class="card pad section">
+      <div class="row-between"><h2 style="margin:0">訂單看板 <span class="qty">(<span id="cupCount">${state.orders.length}</span> 杯)</span></h2>
+        <button class="btn btn-primary btn-sm" onclick="openExport()">匯出訊息</button></div>
+      <div id="boardBox" style="margin-top:10px">${boardHtml()}</div>
+    </div>
+
+    <div class="row-between section">
+      <button class="link-btn" onclick="shareLink()">🔗 複製分享連結</button>
+      <div>
+        ${g.status==="open"?`<button class="btn btn-ghost btn-sm" onclick="setStatus('closed')">結單</button>`:g.status==="closed"?`<button class="btn btn-ghost btn-sm" onclick="setStatus('open')">重新開放</button>`:""}
+        ${g.status!=="archived"?`<button class="btn btn-ghost btn-sm" onclick="setStatus('archived')">封存</button>`:`<button class="btn btn-ghost btn-sm" onclick="setStatus('open')">取消封存</button>`}
+      </div>
+    </div>`;
+}
+function goHome(){ if(state.channel){sb.removeChannel(state.channel);state.channel=null;} state.group=null; history.replaceState(null,"",location.pathname); renderHome(); }
+function setCat(c){state.cat=c;document.querySelectorAll(".cat").forEach(b=>b.classList.remove("active"));event.target.classList.add("active");document.getElementById("items").innerHTML=itemsHtml();}
+function itemsHtml(){
+  return MENU.filter(m=>m.cat===state.cat).map(m=>{
+    const prices=SIZES.map((s,i)=>m.p[i]!=null?`${s.label} $${m.p[i]}`:null).filter(Boolean).join(" / ");
+    const tags=[m.ice?`<span class="tag tag-ice">限冰</span>`:"",m.hot?`<span class="tag tag-hot">限熱</span>`:"",m.rec?`<span class="tag tag-rec">推薦</span>`:"",m.caf?`<span class="tag tag-caf">無咖啡因</span>`:""].join("");
+    return `<button class="item" onclick="openItem('${m.id}')">
+      <div class="item-main">
+        <div class="item-name">${esc(m.zh)} ${tags}</div>
+        <div class="item-en">${esc(m.en)}</div>
+        ${m.desc?`<div class="item-desc">${esc(m.desc)}</div>`:""}
+        ${SHOW_PRICE?`<div class="item-desc">${prices}</div>`:""}
+      </div>
+      <div class="plus">＋</div>
+    </button>`;
+  }).join("");
+}
+
+/* ---- 品項選單（尺寸/冰熱/糖度） ---- */
+let draft=null;
+function openItem(id){
+  const m=menuById[id];
+  const firstSize = SIZES.find((s,i)=>m.p[i]!=null)?.k || "M";
+  draft={id, size:firstSize, temp:null, sugar:"half", note:""};
+  fixTemp();
+  renderItemSheet();
+  openSheetRaw();
+}
+function fixTemp(){ // 根據限制決定冰熱
+  const m=menuById[draft.id];
+  if(m.hot){draft.temp="hot";return;}
+  if(m.ice){draft.temp="ice";return;}
+  if(draft.size==="XL"){draft.temp="ice";return;} // 特大杯只做冰
+  if(!draft.temp)draft.temp="ice";
+}
+function renderItemSheet(){
+  const m=menuById[draft.id]; const idx={M:0,L:1,XL:2}[draft.size];
+  const price=m.p[idx];
+  const tempLocked = m.hot||m.ice||draft.size==="XL";
+  const html=`<h2>${esc(m.zh)}</h2><div class="hint">${esc(m.en)}${m.desc?" · "+esc(m.desc):""}</div>
+    <div class="opt-group"><div class="opt-label">尺寸</div><div class="opts">
+      ${SIZES.map((s,i)=>`<button class="opt ${draft.size===s.k?'on':''}" ${m.p[i]==null?'disabled':''} onclick="pickSize('${s.k}')">${s.label}<span class="sub">${s.sub}${m.p[i]!=null&&SHOW_PRICE?` · $${m.p[i]}`:""}</span></button>`).join("")}
+    </div></div>
+    <div class="opt-group"><div class="opt-label">冰／熱 ${tempLocked?`<span class="hint">（${m.hot?"僅供熱飲":m.ice?"僅供冰飲":"特大杯僅供冰飲"}）</span>`:""}</div><div class="opts">
+      <button class="opt ${draft.temp==='ice'?'on':''}" ${(m.hot)?'disabled':''} onclick="pickTemp('ice')">冰</button>
+      <button class="opt ${draft.temp==='hot'?'on':''}" ${(m.ice||draft.size==='XL')?'disabled':''} onclick="pickTemp('hot')">熱</button>
+    </div></div>
+    <div class="opt-group"><div class="opt-label">糖度</div><div class="opts">
+      ${SUGARS.map(s=>`<button class="opt ${draft.sugar===s.k?'on':''}" onclick="pickSugar('${s.k}')">${s.label}</button>`).join("")}
+    </div></div>
+    <div class="opt-group"><div class="opt-label">備註（選填）</div>
+      <input class="note-in" id="noteIn" placeholder="例如：少冰、常溫、加濃縮…" value="${esc(draft.note)}" maxlength="30"></div>
+    <button class="btn btn-primary btn-block" style="margin-top:20px" onclick="addToCart()">加入 ${draft.size}${SHOW_PRICE&&price?` · $${price}`:""}</button>`;
+  document.getElementById("sheet").innerHTML=html;
+}
+function pickSize(k){draft.size=k;fixTemp();syncNote();renderItemSheet();}
+function pickTemp(t){draft.temp=t;syncNote();renderItemSheet();}
+function pickSugar(s){draft.sugar=s;syncNote();renderItemSheet();}
+function syncNote(){const n=document.getElementById("noteIn");if(n)draft.note=n.value;}
+function addToCart(){
+  syncNote();
+  const m=menuById[draft.id]; const idx={M:0,L:1,XL:2}[draft.size];
+  state.cart.push({item_id:m.id,item_name:m.zh,category:m.cat,size:draft.size,temp:draft.temp,sugar:draft.sugar,price:m.p[idx]||null,note:draft.note.trim()});
+  closeSheet();
+  document.getElementById("cartCard").innerHTML=cartHtml();
+  toast("已加入 "+m.zh);
+}
+function specText(o){return `${o.size}/${o.temp==="ice"?"冰":"熱"}/${SUGAR_LABEL[o.sugar]}${o.note?` · ${o.note}`:""}`;}
+function cartHtml(){
+  if(!state.cart.length) return `<h2>我的訂單</h2><div class="empty">點上面的品項加入這裡，填名字後送出。</div>`;
+  return `<h2>我的訂單（${state.cart.length} 杯）</h2>`+state.cart.map((o,i)=>`<div class="line-item">
+      <div class="li-main"><div class="li-name">${esc(o.item_name)}</div>
+        <div class="li-spec"><span class="chip chip-${o.temp}">${o.temp==="ice"?"冰":"熱"}</span>${o.size} · ${SUGAR_LABEL[o.sugar]}${o.note?` · ${esc(o.note)}`:""}</div></div>
+      <button class="icon-btn" onclick="removeCart(${i})">✕</button>
+    </div>`).join("")+`<button class="btn btn-primary btn-block" style="margin-top:14px" onclick="submitOrder()">送出訂單（${state.cart.length} 杯）</button>`;
+}
+function removeCart(i){state.cart.splice(i,1);document.getElementById("cartCard").innerHTML=cartHtml();}
+async function submitOrder(){
+  const name=myName();
+  if(!name){toast("請先填你的名字");document.getElementById("nameIn")?.focus();return;}
+  if(!state.cart.length){toast("還沒點東西");return;}
+  if(state.group.status!=="open"){toast("此團已結單，無法再點");return;}
+  const rows=state.cart.map(o=>({group_id:state.group.id,user_name:name,user_email:state.user?.email||null,...o}));
+  const {data,error}=await sb.from("orders").insert(rows).select();
+  if(error){toast("送出失敗："+error.message);return;}
+  (data||[]).forEach(r=>addMyOrderId(state.group.id,r.id));
+  ls("cama_name",name);
+  ls("cama_last_order",{name,items:state.cart});
+  state.cart=[];
+  document.getElementById("cartCard").innerHTML=cartHtml();
+  await refreshOrders();
+  toast("已送出 ☕ 感謝！");
+}
+
+/* ---- 帶入上次訂單 ---- */
+async function loadLast(){
+  // 已登入 → 從資料庫抓最近一團的訂單；否則用本機記錄
+  if(state.user?.email){
+    const {data}=await sb.from("orders").select("*").eq("user_email",state.user.email).neq("group_id",state.group.id).order("created_at",{ascending:false}).limit(30);
+    if(data&&data.length){
+      const lastGid=data[0].group_id;
+      const items=data.filter(o=>o.group_id===lastGid).map(o=>({item_id:o.item_id,item_name:o.item_name,category:o.category,size:o.size,temp:o.temp,sugar:o.sugar,price:o.price,note:o.note||""}));
+      state.cart=state.cart.concat(items);
+      document.getElementById("cartCard").innerHTML=cartHtml();
+      toast(`帶入上次 ${items.length} 杯`); return;
+    }
+  }
+  const last=ls("cama_last_order");
+  if(last?.items?.length){
+    state.cart=state.cart.concat(last.items);
+    if(!state.user && !myName() && last.name){document.getElementById("nameIn").value=last.name;}
+    document.getElementById("cartCard").innerHTML=cartHtml();
+    toast(`帶入上次 ${last.items.length} 杯`);
+  } else { toast("找不到上次訂單紀錄"); }
+}
+
+/* ---- 訂單看板 ---- */
+function boardHtml(){
+  if(!state.orders.length) return `<div class="empty">還沒有人點餐</div>`;
+  const byPerson={};
+  state.orders.forEach(o=>{(byPerson[o.user_name]=byPerson[o.user_name]||[]).push(o);});
+  const mine=myOrderIds(state.group.id);
+  return Object.entries(byPerson).map(([name,list])=>`<div class="section" style="margin-top:6px">
+    <div class="li-name">${esc(name)} <span class="hint">· ${list.length} 杯</span></div>
+    ${list.map(o=>`<div class="line-item">
+      <div class="li-main"><div class="li-spec"><span class="chip chip-${o.temp}">${o.temp==="ice"?"冰":"熱"}</span>${esc(o.item_name)} · ${o.size} · ${SUGAR_LABEL[o.sugar]}${o.note?` · ${esc(o.note)}`:""}</div></div>
+      ${mine.includes(o.id)?`<button class="icon-btn" title="移除我的這杯" onclick="delOrder('${o.id}')">🗑</button>`:""}
+    </div>`).join("")}
+  </div>`).join("");
+}
+async function delOrder(id){
+  const {error}=await sb.from("orders").delete().eq("id",id);
+  if(error){toast("移除失敗");return;}
+  ls("cama_mine_"+state.group.id, myOrderIds(state.group.id).filter(x=>x!==id));
+  await refreshOrders(); toast("已移除");
+}
+
+/* ---- 狀態切換 ---- */
+async function setStatus(s){
+  if(s==="archived"&&!confirm("封存後此團會從首頁隱藏（資料保留）。確定封存？"))return;
+  const {error}=await sb.from("groups").update({status:s}).eq("id",state.group.id);
+  if(error){toast("更新失敗");return;}
+  state.group.status=s; renderGroup(); toast(s==="open"?"已開放點餐":s==="closed"?"已結單":"已封存");
+}
+async function reopenGroup(id){await sb.from("groups").update({status:"open"}).eq("id",id);closeSheet();openGroup(id);}
+function shareLink(){
+  const url=location.origin+location.pathname+"?g="+state.group.id;
+  copy(url,"已複製分享連結");
+}
+
+/* ---- 匯出 ---- */
+function buildExport(){
+  const g=state.group; const orders=state.orders;
+  const head=`【CAMA 團購】${g.name} · 共 ${orders.length} 杯`;
+  // 訂單清單（整併）
+  const map=new Map();
+  orders.forEach(o=>{
+    const key=`${o.category}|${o.item_name}|${o.size}|${o.temp}|${o.sugar}|${o.note||""}`;
+    if(!map.has(key))map.set(key,{...o,qty:0});
+    map.get(key).qty++;
+  });
+  const order=CATS.map(c=>c.id);
+  const listArr=[...map.values()].sort((a,b)=>order.indexOf(a.category)-order.indexOf(b.category)||a.item_name.localeCompare(b.item_name,"zh"));
+  const list=listArr.map((o,i)=>`${i+1}. ${o.item_name}　${o.size}/${o.temp==="ice"?"冰":"熱"}/${SUGAR_LABEL[o.sugar]}${o.note?`（${o.note}）`:""}　×${o.qty}`).join("\n");
+  // 對應名單
+  const byPerson={};
+  orders.forEach(o=>{(byPerson[o.user_name]=byPerson[o.user_name]||[]).push(o);});
+  const names=Object.entries(byPerson).map(([n,l])=>`・${n}：`+l.map(o=>`${o.item_name} ${o.size}/${o.temp==="ice"?"冰":"熱"}/${SUGAR_LABEL[o.sugar]}${o.note?`(${o.note})`:""}`).join("、")).join("\n");
+  const listText=`${head}\n────────────\n▍訂單清單（拿去點的）\n${list||"（無）"}`;
+  const nameText=`${head}\n────────────\n▍對應名單（回來發的）\n${names||"（無）"}`;
+  return {listText,nameText};
+}
+function openExport(){
+  state.exportTab="list";
+  renderExport();
+  openSheetRaw();
+}
+function renderExport(){
+  const {listText,nameText}=buildExport();
+  const cur = state.exportTab==="list"?listText:nameText;
+  document.getElementById("sheet").innerHTML=`<h2>匯出訊息</h2>
+    <div class="seg" style="margin-top:12px">
+      <button class="${state.exportTab==='list'?'on':''}" onclick="switchExport('list')">訂單清單</button>
+      <button class="${state.exportTab==='names'?'on':''}" onclick="switchExport('names')">對應名單</button>
+    </div>
+    <pre class="out" id="exportOut">${esc(cur)}</pre>
+    <button class="btn btn-primary btn-block" style="margin-top:14px" onclick="copyExport()">複製這段</button>
+    <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="copyBoth()">一次複製兩段</button>`;
+}
+function switchExport(t){state.exportTab=t;renderExport();}
+function copyExport(){const {listText,nameText}=buildExport();copy(state.exportTab==="list"?listText:nameText,"已複製");}
+function copyBoth(){const {listText,nameText}=buildExport();copy(listText+"\n\n"+nameText,"已複製兩段");}
+
+/* ---- 複製 ---- */
+function copy(text,msg){
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(()=>toast(msg||"已複製")).catch(()=>fallbackCopy(text,msg));}
+  else fallbackCopy(text,msg);
+}
+function fallbackCopy(text,msg){const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast(msg||"已複製");}catch(e){toast("複製失敗，請長按選取");}document.body.removeChild(ta);}
+
+/* ---- Sheet 控制 ---- */
+function openSheet(html){document.getElementById("sheet").innerHTML=html;openSheetRaw();}
+function openSheetRaw(){document.getElementById("overlay").classList.add("show");}
+function closeSheet(){document.getElementById("overlay").classList.remove("show");}
+document.getElementById("overlay").addEventListener("click",e=>{if(e.target.id==="overlay")closeSheet();});
+</script>
+</body>
+</html>
