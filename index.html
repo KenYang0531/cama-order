@@ -163,6 +163,8 @@
   .row-between{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .section{margin-top:16px}
   .link-btn{color:var(--amber-dk);font-weight:700;font-size:14px}
+  .rename-btn{font-size:15px;color:var(--muted);background:none;padding:2px 8px;border-radius:8px;vertical-align:middle}
+  .rename-btn:active{background:#f0e7d8}
   .divider{height:1px;background:var(--line);margin:14px 0}
   .banner{background:#fff7ec;border:1px solid #f3ddb4;color:#8a5a08;border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:12px}
 </style>
@@ -390,7 +392,7 @@ function renderGroup(){
   $app.innerHTML=`
     <div class="row-between section">
       <div><button class="link-btn" onclick="goHome()">‹ 所有團</button>
-        <h1 style="margin-top:6px">${esc(g.name)} ${statusPill(g.status)}</h1></div>
+        <h1 style="margin-top:6px">${esc(g.name)} ${statusPill(g.status)} <button class="rename-btn" onclick="renameGroup()" aria-label="改團名">✎</button></h1></div>
     </div>
     <div class="card pad section">
       <div class="idbar">
@@ -583,6 +585,21 @@ async function setStatus(s){
   state.group.status=s; renderGroup(); toast(s==="open"?"已開放點餐":s==="closed"?"已結單":"已封存");
 }
 async function reopenGroup(id){await sb.from("groups").update({status:"open"}).eq("id",id);closeSheet();openGroup(id);}
+function renameGroup(){
+  const g=state.group;
+  openSheet(`<h2>修改團名</h2>
+    <input class="note-in" id="renameIn" value="${esc(g.name)}" maxlength="40" style="margin-top:12px" onkeydown="if(event.key==='Enter')saveGroupName()">
+    <button class="btn btn-primary btn-block" style="margin-top:14px" onclick="saveGroupName()">儲存</button>`);
+  setTimeout(()=>{const el=document.getElementById("renameIn");if(el){el.focus();el.select();}},60);
+}
+async function saveGroupName(){
+  const name=document.getElementById("renameIn").value.trim();
+  if(!name){toast("團名不能空白");return;}
+  const {error}=await sb.from("groups").update({name}).eq("id",state.group.id);
+  if(error){toast("更新失敗："+error.message);return;}
+  state.group.name=name;
+  closeSheet(); renderGroup(); toast("已更新團名");
+}
 function shareLink(){
   const url=location.origin+location.pathname+"?g="+state.group.id;
   copy(url,"已複製分享連結");
