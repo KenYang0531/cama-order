@@ -226,7 +226,6 @@ const MENU = [
   {id:"mandheling",cat:"drip",zh:"黃金曼特寧",en:"Golden Mandheling",p:[115,130,null],desc:"蜂蜜甘醇／柴燒黑糖／半水洗"},
   // 奶咖
   {id:"premium-latte",cat:"milk",zh:"雙冠莊園精品拿鐵",en:"Premium Latte",p:[105,125,145],rec:true},
-  {id:"rich-milk-latte",cat:"milk",zh:"極厚乳三層拿鐵",en:"Rich Milk Latte",p:[105,null,null],rec:true,desc:"極厚乳"},
   {id:"cama-latte",cat:"milk",zh:"CAMA 金獎拿鐵",en:"CAMA Latte",p:[85,105,125]},
   {id:"light-latte",cat:"milk",zh:"微韻輕拿鐵",en:"Light Latte",p:[85,105,125]},
   {id:"oat-latte",cat:"milk",zh:"燕麥拿鐵",en:"Oat Milk Latte",p:[105,125,145],rec:true,variants:["經典","微韻輕"],desc:"經典 OATLY／微韻輕 OATSIDE"},
@@ -261,7 +260,7 @@ const SUGAR_LABEL = {none:"無糖",light:"微糖",half:"半糖",less:"少糖",fu
 const ICES = [{k:"normal",label:"正常冰"},{k:"less",label:"少冰"},{k:"light",label:"微冰"},{k:"none",label:"去冰"}];
 const ICE_LABEL = {normal:"正常冰",less:"少冰",light:"微冰",none:"去冰"};
 const menuById = Object.fromEntries(MENU.map(m=>[m.id,m]));
-const PHOTO_IDS = new Set(["cold-brew","berry","floral-yirga","yirga","mandheling-brazil","mandheling","premium-americano","premium-latte","oat-latte","flavored-coffee","flavored-latte","caramel-macchiato","black-tea","freshmilk-black-tea","flavored-milk-tea","alishan-oolong","freshmilk-oolong","mixed-berries","herbal","mango-rooibos","rich-milk-latte","pomona","mocha","matcha-milk","matcha-latte","light-americano","light-latte","choco-prince","camellia-latte","milkfoam-oolong","milkfoam-black-tea","milkfoam-sea-salt","greenjade","coffeejelly-freshmilk-tea","coffee-jelly-latte","choco-milk","cappuccino","cama-americano","cama-latte"]);
+const PHOTO_IDS = new Set(["cold-brew","berry","floral-yirga","yirga","mandheling-brazil","mandheling","premium-americano","premium-latte","oat-latte","flavored-coffee","flavored-latte","caramel-macchiato","black-tea","freshmilk-black-tea","flavored-milk-tea","alishan-oolong","freshmilk-oolong","mixed-berries","herbal","mango-rooibos","pomona","mocha","matcha-milk","matcha-latte","light-americano","light-latte","choco-prince","camellia-latte","milkfoam-oolong","milkfoam-black-tea","milkfoam-sea-salt","greenjade","coffeejelly-freshmilk-tea","coffee-jelly-latte","choco-milk","cappuccino","cama-americano","cama-latte"]);
 
 /* ============ 狀態 ============ */
 let state = {view:"home", group:null, user:null, cart:[], orders:[], cat:"black", channel:null, exportTab:"list"};
